@@ -1,0 +1,1 @@
+﻿Scaffold-DbContext "Name=MySQL:ConnectionString" Pomelo.EntityFrameworkCore.MySql -OutputDir Data/Models  -Context IncidentLibraryContext -ContextNamespace IncidentLibrary.Data.Context

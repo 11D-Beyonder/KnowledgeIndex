@@ -1,0 +1,87 @@
+﻿@page "/finder"
+@inject IDbContextFactory<IncidentLibraryContext> DbFactory
+@using System.Linq
+
+<PageTitle>Finder</PageTitle>
+
+<MultiSelect TValue="List<string>" ShowToolbar="true" ShowDefaultButtons="true" ShowCloseButton="true" Items="@selectedItemList" @bind-Value="@selectedArrayValues">
+	<ItemTemplate>
+		<Tag Color="(Color)int.Parse(context.Value.First().ToString())">@context.Text</Tag>
+	</ItemTemplate>
+	<ButtonTemplate>
+		<Button TooltipText="搜索" ButtonStyle="ButtonStyle.Circle" IsAsync="true" Icon="fa-fw fa-solid fa-search" @onclick="searchIncidentByLabels"></Button>
+	</ButtonTemplate>
+</MultiSelect>
+<Divider></Divider>
+@if (incidentList == null || incidentList.Count() == 0)
+{
+	<Empty Image="https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg" Width="133" Text="暂无数据" />
+}
+else
+{
+	<Collapse IsAccordion="true">
+		<CollapseItems>
+			@foreach (Incident incident in incidentList)
+			{
+				<CollapseItem Text="@incident.Title">
+					<Divider Icon="fa-fw fa-solid fa-chart-bar"></Divider>
+					@foreach (var name in incident.Labels.Split(';'))
+					{
+						<Tag style="margin: 5px" Color="(Color)getLabelColorByName(name)">@name</Tag>
+					}
+					<Divider Icon="fa-fw fa-solid fa-chart-bar"></Divider>
+					<p>@incident.Content</p>
+				</CollapseItem>
+			}
+		</CollapseItems>
+	</Collapse>
+}
+
+
+
+
+@code {
+	private List<SelectedItem> selectedItemList =new();
+	private List<string> selectedArrayValues = new();
+	private List<Incident> incidentList = new();
+	protected override void OnInitialized()
+	{
+		using var context = DbFactory.CreateDbContext();
+		var labelList=context.Labels.ToList();
+		foreach(Label label in labelList)
+		{
+			selectedItemList.Add(new SelectedItem(label.Color.ToString()+label.Name, label.Name));
+		}
+	}
+	private int getLabelColorByName(string name)
+	{
+		using var context = DbFactory.CreateDbContext();
+		return context.Labels.Where(label => label.Name == name).Select(label => label.Color).FirstOrDefault();
+	}
+	private bool labelMatch(Incident incident)
+	{
+		List<string> incidentLabels = incident.Labels.Split(';').ToList();
+		List<string> selectedLabels = new();
+		foreach (var item in selectedArrayValues)
+		{
+			selectedLabels.Add(item.Remove(0, 1));
+		}
+		foreach (var label in selectedLabels)
+		{
+			if (!incidentLabels.Contains(label))
+			{
+				return false;
+			}
+
+		}
+		return true;
+	}
+	private async Task searchIncidentByLabels()
+	{
+		using var context = await DbFactory.CreateDbContextAsync();
+		incidentList = await Task.Run(() =>
+		{
+			return context.Incidents.AsEnumerable().Where(incident => labelMatch(incident)).OrderBy(incident => incident.Id).ToList();
+		});
+	}
+}
