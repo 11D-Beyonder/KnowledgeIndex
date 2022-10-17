@@ -25,12 +25,12 @@ else
 			{
 				<CollapseItem Text="@incident.Title">
 					<Divider Icon="fa-fw fa-solid fa-chart-bar"></Divider>
-					@foreach (var name in incident.Labels.Split(';'))
+					@foreach (var name in incident.Labels.Split('、'))
 					{
 						<Tag style="margin: 5px" Color="(Color)getLabelColorByName(name)">@name</Tag>
 					}
 					<Divider Icon="fa-fw fa-solid fa-chart-bar"></Divider>
-					<p>@incident.Content</p>
+					<div>@incident.Content</div>
 				</CollapseItem>
 			}
 		</CollapseItems>
@@ -48,6 +48,7 @@ else
 	{
 		using var context = DbFactory.CreateDbContext();
 		var labelList=context.Labels.ToList();
+		labelList=labelList.OrderBy(label => label.Name).ToList();
 		foreach(Label label in labelList)
 		{
 			selectedItemList.Add(new SelectedItem(label.Color.ToString()+label.Name, label.Name));
@@ -60,7 +61,7 @@ else
 	}
 	private bool labelMatch(Incident incident)
 	{
-		List<string> incidentLabels = incident.Labels.Split(';').ToList();
+		List<string> incidentLabels = incident.Labels.Split('、').ToList();
 		List<string> selectedLabels = new();
 		foreach (var item in selectedArrayValues)
 		{
